@@ -12,3 +12,4 @@ numpy
 h5py
 requests
 pydantic
+google-generativeai
