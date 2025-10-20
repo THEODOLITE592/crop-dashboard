@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Crop Monitoring Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<!-- Add these in your <head> -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+<style>
+    html, body {
+      overflow-x: hidden; /* hides horizontal scroll */
+    }
+  </style>
+<style>
+body, html { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #f4f6f9; scroll-behavior: smooth; }
+
+/* --- Navbar --- */
+.navbar {
+    display: flex; justify-content: space-between; align-items: center; height: 100px;box-sizing: border-box;
+    padding: 15px 20px; background: #ffffff; color: white; box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+}
+.navbar .logo img {
+    max-height: 80px;     /* slightly smaller than navbar height (100px) */
+    max-width: 150px;     /* adjust so it doesn't take half the navbar width */
+    height: auto;         /* preserves aspect ratio */
+    width: auto;          /* preserves aspect ratio */
+    display: block;       /* removes inline spacing issues */
+    object-fit: contain;  /* makes sure the full image fits inside the box */
+}
+.navbar .nav-buttons { display: flex; flex: 1; justify-content: space-between; max-width: 900px; }
+.navbar .nav-buttons a {
+    padding: 6px 10px; border-radius: 6px; color: rgb(255, 255, 255); text-decoration: none; background-color: rgb(115, 167, 81);
+    transition: background 0.3s, color 0.3s; font-size: 14px; white-space: nowrap; text-align: center; border: 1.5px solid rgb(115, 167, 81); 
+}
+.navbar .nav-buttons a:hover { background: rgba(255, 255, 255, 0.2); color: #69ce26; }
+
+/* --- Hero Section --- */
+.hero {
+    width: 100%; height: 50vh;
+    background-image: url('https://www.shutterstock.com/image-photo/lush-rice-paddy-field-neat-600nw-2499404003.jpg');
+    background-size: cover; background-position: center; display: flex;
+    align-items: center; justify-content: center; position: relative;
+}
+.hero-text { color: white; font-size: 48px; font-weight: bold; text-shadow: 2px 2px 8px rgba(0,0,0,0.6); text-align: center; }
+
+/* --- Section Styling --- */
+.section { padding: 60px 20px; max-width: 1200px; margin: auto; }
+.section h2 { font-size: 32px; color: #0d47a1; margin-bottom: 20px; text-align: center; }
+.section p { font-size: 16px; color: #333; line-height: 1.6; margin-bottom: 15px; text-align: justify; }
+.section .highlight { color: #1976d2; font-weight: bold; }
+.section .cards { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin-top: 30px; }
+.card { background: white; flex: 1 1 250px; min-width: 250px; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); text-align: center; transition: transform 0.3s; }
+.card:hover { transform: translateY(-6px); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+.card img { max-width: 100%; height: 120px; object-fit: contain; margin-bottom: 10px; }
+.card h4 { font-size: 18px; margin-bottom: 10px; color: #0d47a1; }
+
+/* --- Info Box for ETc & NDVI --- */
+.info-box {
+    background: #ffffff; 
+    padding: 25px 20px; 
+    border-radius: 12px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+    margin-bottom: 40px;
+}
+
+/* ---- NDVI form / two-column layout (replaces old .form-container) ---- */
+.form-container {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1200px;
+  margin: 28px auto;
+  background: white;
+  padding: 22px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  display: none;
+}
+.form-row {
+  display: flex;
+  flex-direction: row;
+  gap: 28px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
+}
+.form-col {
+  box-sizing: border-box;
+  flex: 1 1 45%;
+  min-width: 280px;
+  max-width: calc(50% - 14px);
+}
+.form-col.info-box {
+  background: #ffffff;
+  padding: 18px;
+  border-radius: 10px;
+  box-shadow: none;
+  max-height: 640px;
+  overflow: auto;
+}
+@media (max-width: 920px) {
+  .form-row { flex-wrap: wrap; }
+  .form-col { flex: 1 1 100%; max-width: 100%; min-width: 0; }
+}
+#ndviForm { display:flex; flex-direction:column; gap:10px; }
+#ndviForm input, #ndviForm select, #ndviForm button {
+  padding: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* --- Output Table --- */
+#output table { border-collapse: collapse; width: 100%; margin-top: 30px; }
+#output th, #output td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+#output th { background-color: #90caf9; position: sticky; top: 0; z-index: 1; }
+#output tr:nth-child(even) { background: #e3f2fd; }
+#output tr:hover { background: #bbdefb; }
+
+/* --- NDVI Footer --- */
+#ndviFooter { display: none; background: #ffffff; color: black; padding: 40px 20px; width: 100%; }
+.footer-container { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 30px; max-width: 1200px; margin: auto; }
+.footer-box { background: none; flex: 1 1 250px; min-width: 200px; height: auto; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; color: black; font-size: 16px; font-weight: bold; text-decoration: none; padding: 15px 10px; transition: transform 0.3s, box-shadow 0.3s; text-align: center; }
+.footer-box img { width: 100%; max-width: 120px; height: auto; margin-bottom: 10px; }
+.footer-title { font-weight: bold; margin-bottom: 5px; font-size: 16px; }
+.footer-desc { font-weight: normal; font-size: 14px; color: #555; }
+.footer-box:hover { transform: translateY(-6px); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+
+/* --- Home Footer --- */
+#homeFooter { display: block; background: rgb(115, 167, 81); color: white; padding: 50px 20px; width: 100%; box-sizing: border-box; }
+.home-footer-container { display: flex; justify-content: space-between; flex-wrap: wrap; max-width: 1200px; margin: auto; gap: 20px; box-sizing: border-box; }
+.footer-column { flex: 1 1 250px; min-width: 200px; box-sizing: border-box; margin-bottom: 20px; }
+.footer-column ul { list-style: none; padding: 0; margin: 0; }
+.footer-column ul li { margin-bottom: 8px; }
+.footer-column ul li a { color: white; text-decoration: none; transition: color 0.3s; }
+.footer-column ul li a:hover { color: #ffeb3b; }
+.footer-column .contact-icons a { margin-right: 10px; font-size: 20px; color: white; transition: color 0.3s; }
+.footer-column .contact-icons a:hover { color: #ffeb3b; }
+
+/* --- Responsive --- */
+@media(max-width: 900px){
+    .navbar { flex-wrap: wrap; }
+    .navbar .nav-buttons { justify-content: space-around; width: 100%; margin-top: 8px; }
+    .navbar .nav-buttons a { font-size: 12px; padding: 5px 8px; }
+    .hero-text { font-size: 36px; }
+    .form-container { margin: 20px; width: auto; }
+    .footer-container, .home-footer-container { flex-direction: column; align-items: center; }
+    .footer-column { margin-bottom: 20px; text-align: center; }
+    .section .cards { flex-direction: column; align-items: center; }
+}
+
+/* --- Highlight links --- */
+.section a { color: #1976d2; text-decoration: underline; }
+
+/* --- Disease prediction UI additions --- */
+#diseaseSection { display: none; padding: 40px 20px; max-width: 900px; margin: 30px auto; }
+#predict-widget { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
+#predict-widget input[type="file"] { display:block; margin-bottom: 10px; }
+#imgPreview { max-width: 320px; width: 100%; height: auto; border-radius: 8px; margin-top: 8px; display:none; border:1px solid #ddd; }
+#resultBox { margin-top: 12px; padding: 12px; background:#fafafa; border-radius:8px; display:none; }
+.status { margin-top:8px; font-size:14px; color:#333; }
+.small-muted { font-size:13px; color:#666; margin-top:6px; }
+.topk-list { list-style:none; padding:0; margin:0; }
+.topk-list li { padding:6px 0; border-bottom:1px dashed #eee; }
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<div class="navbar">
+    <div class="logo">
+    <img src="assets/images/Screenshot 2025-10-19 225701.png" class="logo-img">
+    </div>
+
+    <div class="nav-buttons">
+        <a href="#" id="homeBtn">Home</a>
+        <a href="#" id="ndviBtn">NDVI_ETc Report</a>
+        <a href="#" id="diseaseBtn">Disease Prediction</a>
+        <a href="#aboutSection" id="aboutBtn">About Us</a>
+        <a href="#">Help</a>
+        <a href="#">Settings</a>
+    </div>
+</div>
+
+<!-- Hero Section -->
+<div class="hero" id="hero">
+    <div class="hero-text">Crop Monitoring</div>
+</div>
+
+<!-- Home Sections -->
+<div id="homeSections">
+
+    <!-- Why Crop Monitoring Matters -->
+    <div class="section">
+        <h2>Why Crop Monitoring Matters</h2>
+        <div class="cards">
+            <div class="card">
+                <img src="assets/images/Water_usage.jpg" alt="Water">
+                <h4>Optimize Water Usage</h4>
+                <p>Ensure crops receive the right amount of water and reduce wastage.</p>
+            </div>
+            <div class="card">
+                <img src="assets/images/diseaseMangement.webp" alt="Disease">
+                <h4>Disease Prevention</h4>
+                <p>Detect crop stress or disease early to prevent yield loss.</p>
+            </div>
+            <div class="card">
+                <img src="assets/images/increase_yield.jpeg" alt="Yield">
+                <h4>Increase Yield</h4>
+                <p>Monitor growth trends and optimize farming practices.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="section">
+        <h2>How It Works</h2>
+        <div class="cards">
+            <div class="card">
+                <h4>Step 1: Satellite Imagery</h4>
+                <p>Collect multispectral images from Sentinel-2 and Landsat-8.</p>
+            </div>
+            <div class="card">
+                <h4>Step 2: NDVI & ETc Calculation</h4>
+                <p>Compute NDVI and ETc values using satellite and weather data.</p>
+            </div>
+            <div class="card">
+                <h4>Step 3: Dashboard Visualization</h4>
+                <p>Display results on an interactive dashboard with charts and tables.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supported Crops -->
+    <div class="section">
+        <h2>Supported Crops</h2>
+        <div class="cards">
+            <div class="card"><img src="assets/images/rice.jpg" alt="Rice"><h4>Rice</h4></div>
+            <div class="card"><img src="assets/images/maize.jpg" alt="Maize"><h4>Maize</h4></div>
+            <div class="card"><img src="assets/images/wheat.jpeg" alt="Wheat"><h4>Wheat</h4></div>
+            <div class="card"><img src="assets/images/cotton.jpg" alt="Cotton"><h4>Cotton</h4></div>
+            <div class="card"><img src="assets/images/groundnut.jpg" alt="Groundnut"><h4>Groundnut</h4></div>
+            <div class="card"><img src="assets/images/sugarcane.jpeg" alt="Sugarcane"><h4>Sugarcane</h4></div>
+        </div>
+    </div>
+
+    <!-- Benefits -->
+    <div class="section">
+        <h2>Key Benefits</h2>
+        <div class="cards">
+            <div class="card"><h4>Real-time Monitoring</h4><p>Get up-to-date information on crop health.</p></div>
+            <div class="card"><h4>Satellite Accuracy</h4><p>High-resolution images provide precise NDVI readings.</p></div>
+            <div class="card"><h4>Weather Integration</h4><p>ETc calculations use precise weather data from the satellite.</p></div>
+            <div class="card"><h4>Actionable Insights</h4><p>Make informed decisions on irrigation and fertilization.</p></div>
+        </div>
+    </div>
+
+</div>
+
+<div class="form-container" id="formContainer" style="flex-direction: column; gap: 20px;">
+
+  <!-- Top row: Map and Form -->
+  <div class="form-row" style="display: flex; gap: 20px;">
+
+    <!-- Left column: Map -->
+    <div class="form-col map-container" style="flex: 1;">
+      <h2>Draw Field Polygon</h2>
+      <div id="map" style="width: 100%; height: 375px; border: 1px solid #ccc;"></div>
+    </div> <!-- end of left column -->
+
+    <!-- Right column: NDVI Input Form -->
+    <div class="form-col info-box" style="flex: 1;">
+      <h2>NDVI & ETc Input</h2>
+      <form id="ndviForm" style="display: flex; flex-direction: column; gap: 10px;">
+        <label>Crop:</label>
+        <select name="crop" required>
+          <option value="rice">Rice</option>
+          <option value="maize">Maize</option>
+          <option value="wheat">Wheat</option>
+          <option value="cotton">Cotton</option>
+          <option value="groundnut">Groundnut</option>
+          <option value="sugarcane">Sugarcane</option>
+        </select>
+
+        <label>Sowing Date:</label>
+        <input type="date" name="sowing_date" required>
+
+        <label>End Date:</label>
+        <input type="date" name="end_date">
+
+        <label>Visual Crossing Key:</label>
+        <input type="text" name="visualcrossing_key" required>
+
+        <button type="submit">Get NDVI & ETc</button>
+      </form>
+    </div> <!-- end of right column -->
+
+  </div> <!-- End of Top row -->
+
+<!-- NDVI Output -->
+<div id="ndviOutput" style="margin-top: 20px; width: 100%; display: none;"></div>
+
+<!-- NDVI Insights & Charts -->
+<div id="insights" style="margin-top: 20px; width: 100%; display: none; padding: 20px; box-sizing: border-box;">
+    <!-- Heading -->
+    <h3>Insights</h3>
+
+    <!-- Summary text -->
+    <p id="ndviSummary"></p>
+
+    <!-- NDVI Chart -->
+    <div style="width: 90%; max-width: 500px; height: 300px; margin: 20px auto;">
+        <canvas id="ndviChart"></canvas>
+    </div>
+
+    <!-- ETc Chart -->
+    <div style="width: 90%; max-width: 500px; height: 300px; margin: 20px auto;">
+        <canvas id="etcChart"></canvas>
+    </div>
+
+    <!-- Full Gemini Textual Insights -->
+    <div id="ndviFullInsight" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 20px; border-radius: 8px;"></div>
+
+</div> <!-- end of insights -->
+
+</div> <!-- end of form-container -->
+
+
+
+<!-- About Us Section -->
+<div id="aboutSection" style="
+    display:none; 
+    width: calc(90% - 40px);   /* full width minus horizontal gap */
+    margin: 40px auto;           /* top & bottom gap */
+    padding: 40px;               /* inner spacing on all sides */
+    background:rgb(115, 167, 81);          /* blue background */
+    color:white;                  /* white text */
+    font-family: Arial, sans-serif;
+    border-radius: 12px;         /* rounded corners */
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12); /* shadow */
+">
+  <h2 style="text-align:center; color:#ffffff; margin-bottom:20px;">About BBC Crop Monitoring</h2>
+
+  <p>BBC Crop Monitoring is a state-of-the-art platform designed to empower farmers, agronomists, and agricultural researchers with actionable insights. Our mission is to leverage advanced technology to make farming more efficient, sustainable, and data-driven.</p>
+
+  <h3 style="color:#050b11; margin-top:30px;">Our Vision</h3>
+  <p>We envision a world where technology bridges the gap between traditional farming and modern precision agriculture. By providing real-time crop monitoring, early disease detection, and data-backed recommendations, we help increase productivity while conserving resources.</p>
+
+  <h3 style="color:#050b11; margin-top:30px;">How We Do It</h3>
+  <ul style="padding-left:20px; line-height:1.6;">
+    <li><strong>Satellite & Drone Data:</strong> Our system collects high-resolution imagery to monitor crop growth and field conditions.</li>
+    <li><strong>AI-Powered Disease Detection:</strong> Using deep learning trained on over 78,000 leaf images, our model predicts crop diseases with high accuracy.</li>
+    <li><strong>Weather Integration:</strong> Real-time weather data is combined with crop models to provide actionable insights.</li>
+    <li><strong>User-Friendly Dashboard:</strong> All insights, predictions, and visualizations are displayed on a clean, interactive dashboard.</li>
+  </ul>
+
+  <h3 style="color:#050b11; margin-top:30px;">Our AI Model</h3>
+  <p>Our AI model has been trained on an extensive dataset of over <strong>78,000 leaf images</strong> covering multiple crops. Key features include:</p>
+  <ul style="padding-left:20px; line-height:1.6;">
+    <li>Identifies specific disease classes for major crops like rice, maize, wheat, cotton, groundnut, and sugarcane.</li>
+    <li>Predicts disease probability with high confidence.</li>
+    <li>Continuously updated as new data becomes available to improve accuracy.</li>
+  </ul>
+
+  <h3 style="color:#050b11; margin-top:30px;">Crop Water Requirement (ETa) & Radiation (Ra)</h3>
+  <p>In addition to disease detection, our system calculates the <strong>actual crop evapotranspiration (ETa)</strong> to estimate water used by crops throughout their growth cycle.</p>
+  <ul style="padding-left:20px; line-height:1.6;">
+    <li><strong>ETa (Actual Crop Evapotranspiration):</strong> Represents the amount of water a crop actually uses through both evaporation from the soil and transpiration from the plants.</li>
+    <li><strong>Reference Radiation (Ra):</strong> Ra is the solar radiation received at the top of the atmosphere. It is calculated based on latitude, day of the year, solar declination, and sunset hour angle:</li>
+    <pre style="background:#050505; padding:8px; border-radius:6px;">
+Ra = (24*60/π) * Gsc * dr * [ωs*sin(φ)*sin(δ) + cos(φ)*cos(δ)*sin(ωs)]
+where:
+Gsc = 0.0820 MJ m⁻² min⁻¹ (solar constant)
+dr  = relative distance Earth-Sun
+φ   = latitude
+δ   = solar declination
+ωs  = sunset hour angle
+</pre>
+    <li><strong>Calculation of ETa:</strong> ETa is calculated using the FAO Penman-Monteith approach simplified with temperature and radiation inputs:</li>
+    <pre style="background:#050505; padding:8px; border-radius:6px;">
+ETo = 0.0023 * Ra * (Tavg + 17.8) * sqrt(Tmax - Tmin)
+ETa = Kc × ETo
+where:
+Tmax = maximum daily temperature (°C)
+Tmin = minimum daily temperature (°C)
+Tavg = average daily temperature (°C)
+Kc   = crop coefficient (varies for initial, mid, and late growth stages)
+</pre>
+    <li><strong>Crop Coefficients (Kc):</strong> Standard Kc values are used for each crop and growth stage to ensure ETa reflects realistic water usage patterns.</li>
+    <p style="margin-top:4px;">Source for ETa/ETo: <a href="https://www.cse.iitb.ac.in/~pocra/References/FAO_Paper56_Irrigation_Drainage.pdf" target="_blank" style="color:#02090c;">FAO Irrigation and Drainage Paper 56 (FAO-56)</a></p>
+  </ul>
+
+  <h3 style="color:#050b11; margin-top:30px;">Sustainability & Impact</h3>
+  <p>BBC Crop Monitoring promotes sustainable agriculture by:</p>
+  <ul style="padding-left:20px; line-height:1.6;">
+    <li>Optimizing resource usage such as water and fertilizers.</li>
+    <li>Minimizing crop loss through timely disease alerts.</li>
+    <li>Supporting farmers with data-driven decisions to increase food security.</li>
+  </ul>
+
+  <h3 style="color:#050b11; margin-top:30px;">Our Commitment</h3>
+  <p>We are committed to empowering the agricultural community with tools that are accurate, reliable, and easy to use. BBC Crop Monitoring is not just a software — it’s a partner in sustainable farming and better yields.</p>
+
+  <p style="text-align:center; margin-top:40px; font-style:italic; color:#0c0101;">"Farming smarter, not harder, with technology you can trust."</p>
+</div>
+
+
+<!-- Disease Prediction Section -->
+<div id="diseaseSection">
+  <div id="predict-widget">
+    <h2>Disease Prediction</h2>
+    <p class="small-muted">Upload a leaf image (jpg/png). The model will return predicted class and probability.</p>
+
+    <input type="file" id="imgFile" accept="image/*" />
+    <label for="imgFile" class="custom-file-label">Choose File</label>
+
+    <img id="imgPreview" src="#" alt="preview" style="display:none;" />
+
+    <div style="display:flex; gap:10px; margin-top:10px;">
+      <button id="uploadBtn">Predict</button>
+      <button id="clearBtn" type="button">Clear</button>
+    </div>
+
+    <div class="status" id="predStatus"></div>
+
+    <div id="resultBox" style="display:none;">
+      <div id="resultJson" style="white-space:pre-wrap; margin-top:8px;"></div>
+      <div id="topKContainer" style="margin-top:10px;">
+        <strong>Top predictions</strong>
+        <ul id="topK" class="topk-list"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Separate Disease Insight Section -->
+<div id="diseaseInsightSection" style="
+  display:none;
+  margin:30px auto;           /* auto centers horizontally */
+  padding:20px;
+  border:1px solid #ccc;
+  border-radius:8px;
+  min-height:100px;
+  background-color:#f9f9f9;
+  max-width:1200px;           /* optional: limits width on large screens */
+  width:90%;                  /* takes 90% of available width */
+  box-sizing:border-box;
+  overflow:hidden;
+">
+  <h3>Insights</h3>
+  <div id="disease_insightBox" style="
+      margin-top:10px;
+      height:auto;
+      padding:10px;          /* extra space inside */
+      white-space:pre-wrap;
+      word-wrap:break-word;
+      box-sizing:border-box;
+  "></div>
+</div>
+
+<!-- Styling -->
+<style>
+
+/* Map container styling */
+.map-container #map {
+    width: 100%;
+    height: 400px; /* Fixed height to render map properly */
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Responsive map height */
+@media(max-width: 920px){
+    .map-container #map {
+        height: 300px;
+    }
+}
+
+.info-box {
+    border: 2px solid rgb(115, 167, 81);
+    border-radius: 8px;
+    background-color: #e102ff;
+    color: #0a0a0b;
+    padding: 15px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.info-box h3, .info-box h4 { color: rgb(115, 167, 81); }
+.info-box a { color: #0716c0; text-decoration: none; font-weight: bold; }
+.info-box a:hover { color: #2e7d32; text-decoration: underline; }
+
+#predict-widget {
+    background: #ffffff;
+    padding: 25px 20px;
+    border-radius: 16px;      /* Rounded outer rectangle */
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    max-width: 500px;
+    margin: auto;
+    overflow: hidden;          /* Prevent overflow */
+}
+
+/* Hide native file input */
+#predict-widget input[type="file"] {
+    display: none;
+}
+
+/* Styled file input label */
+.custom-file-label {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    border-radius: 12px;
+    background-color: rgb(115, 167, 81);
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+    margin-bottom: 12px;
+}
+.custom-file-label:hover {
+    background-color: #0d47a1;
+    transform: translateY(-2px);
+}
+
+/* Image preview */
+#imgPreview {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin-top: 10px;
+    display: none;
+    border: 1px solid #ddd;
+}
+
+/* Buttons */
+#predict-widget button {
+    padding: 12px 20px;
+    font-size: 16px;
+    border-radius: 12px;
+    border: none;
+    background-color: rgb(115, 167, 81);
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+}
+#predict-widget button:hover {
+    background-color: #0d47a1;
+    transform: translateY(-2px);
+}
+#predict-widget button:disabled {
+    background-color: #90caf9;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ---------------- Status & Result Box ---------------- */
+#resultBox {
+    margin-top: 20px;
+    padding: 0;                   /* remove extra space */
+    background: none;             /* remove background */
+    border: none;                 /* remove border */
+    box-shadow: none;             /* remove shadow */
+    color: #010811;              /* keep text color */
+    font-weight: 600;
+}
+
+#resultBox.show {
+    display: block;
+}
+
+#resultBox.hide {
+    display: none;
+}
+#aboutSection {
+    display:none; 
+    width: calc(100% - 40px);
+    margin: 40px auto;
+    padding: 40px;
+    background:#0d47a1;
+    color:white;
+    font-family: Arial, sans-serif;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
+#aboutSection h2, #aboutSection h3 {
+    color: #bbdefb;
+}
+#aboutSection p, #aboutSection ul li {
+    color: white;
+}
+#aboutSection a {
+    color: #ffeb3b;
+    text-decoration: underline;
+}
+#aboutSection pre {
+    background: rgba(255,255,255,0.1);
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+#ndviOutput {
+    margin-top: 20px;
+    width: 100%;
+    min-height: 100px;
+    overflow-x: auto;    /* allow horizontal scroll */
+    padding: 0;
+    border: none;
+    background: none;
+}
+
+#ndviOutput table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 10px;
+}
+
+#ndviOutput th, #ndviOutput td {
+    border: 1px solid #ccc;
+    padding: 6px 8px;
+    text-align: center;
+    white-space: nowrap;  /* prevent wrapping */
+}
+
+#ndviOutput th {
+    background-color: #f9f9f9;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+#ndviOutput tr:nth-child(even) { background: #e3f2fd; }
+#ndviOutput tr:hover { background: #bbdefb; }
+
+#insights {
+    width: 90%;
+    margin: 20px auto;
+    padding: 10px;
+    min-height: 100px;   /* ensures some visible space */
+    background: #f5f5f5;
+    border: 1px solid #ccc;
+}
+
+/* Hide by default */
+#diseaseInsightBox {
+    display: none;
+}
+
+
+
+</style>
+
+
+
+<!-- Home Footer -->
+<footer id="homeFooter">
+    <div class="home-footer-container">
+        <div class="footer-column">
+            <h3>BBC</h3>
+            <p>Follow us on:</p>
+            <div class="contact-icons">
+                <a href="https://www.instagram.com/yashbabu136" target="_blank"><i class="fab fa-instagram"></i></a>
+                <a href="https://www.linkedin.com/Yash-babu" target="_blank"><i class="fab fa-linkedin"></i></a>
+                <a href="https://www.facebook.com/" target="_blank"><i class="fab fa-facebook"></i></a>
+            </div>
+            <p>Email: <a href="mailto:info@bbc.com" style="color:white;">info@bbc.com</a></p>
+        </div>
+        <div class="footer-column">
+            <h3>Services</h3>
+            <ul>
+                <li><a href="#" id="ndviLink">NDVI & ETc Report</a></li>
+                <li><a href="#" id="footerDiseaseLink">Disease Prediction</a></li>
+                <li><a href="#">Other Services</a></li>
+            </ul>
+        </div>
+        <div class="footer-column">
+            <h3>Resources</h3>
+            <ul>
+                <li><a href="https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR" target="_blank">Sentinel Dataset</a></li>
+                <li><a href="https://developers.google.com/earth-engine/datasets/catalog/LANDSAT_LC08_C01_T1_SR" target="_blank">Landsat Dataset</a></li>
+                <li><a href="#">API Documentation</a></li>
+            </ul>
+        </div>
+    </div>
+</footer>
+
+<!-- NDVI Footer -->
+<footer id="ndviFooter">
+    <div class="footer-container">
+        <a class="footer-box" href="https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR" target="_blank">
+            <img src="assets/images/Screenshot 2025-09-30 125718.png" alt="Sentinel Dataset">
+            <div class="footer-title">Sentinel Dataset</div>
+            <div class="footer-desc">High-resolution multispectral images from Sentinel-2 for monitoring crop health.</div>
+        </a>
+        <a class="footer-box" href="https://developers.google.com/earth-engine/datasets/catalog/LANDSAT_LC08_C01_T1_SR" target="_blank">
+            <img src="assets/images/Screenshot 2025-09-30 125744.png" alt="Landsat Dataset">
+            <div class="footer-title">Landsat Dataset</div>
+            <div class="footer-desc">Satellite imagery from Landsat 8 for vegetation and land analysis.</div>
+        </a>
+        <a class="footer-box" href="https://www.visualcrossing.com/weather-data" target="_blank">
+            <img src="https://cdn-icons-png.flaticon.com/512/414/414927.png" alt="Temperature Data">
+            <div class="footer-title">Temperature Data</div>
+            <div class="footer-desc">Daily temperature and weather data to calculate crop evapotranspiration.</div>
+        </a>
+    </div>
+</footer>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // ==========================
+    // --- Section References ---
+    // ==========================
+    const homeSections = document.getElementById("homeSections");
+    const formContainer = document.getElementById("formContainer");
+    const diseaseSection = document.getElementById("diseaseSection");
+    const aboutSection = document.getElementById("aboutSection");
+    const homeFooter = document.getElementById("homeFooter");
+    const ndviFooter = document.getElementById("ndviFooter");
+    const hero = document.getElementById("hero");
+
+    // ==========================
+    // --- Buttons -------------
+    // ==========================
+    const homeBtn = document.getElementById("homeBtn");
+    const ndviBtn = document.getElementById("ndviBtn");
+    const diseaseBtn = document.getElementById("diseaseBtn");
+    const aboutBtn = document.getElementById("aboutBtn");
+    const ndviLink = document.getElementById("ndviLink");
+    const footerDiseaseLink = document.getElementById("footerDiseaseLink");
+
+    // ==========================
+    // --- Show/Hide Functions -
+    // ==========================
+    function showHome() {
+        homeSections.style.display = "block";
+        formContainer.style.display = "none";
+        diseaseSection.style.display = "none";
+        aboutSection.style.display = "none";
+        homeFooter.style.display = "block";
+        ndviFooter.style.display = "none";
+        hero.style.display = "flex";
+
+        if (insightSection) insightSection.style.display = "none";
+    }
+
+    function showNDVI() {
+        homeSections.style.display = "none";
+        formContainer.style.display = "flex";
+        diseaseSection.style.display = "none";
+        aboutSection.style.display = "none";
+        homeFooter.style.display = "none";
+        ndviFooter.style.display = "flex";
+        hero.style.display = "none";
+
+        if (insightSection) insightSection.style.display = "none";
+    }
+
+    function showDisease() {
+        homeSections.style.display = "none";
+        formContainer.style.display = "none";
+        diseaseSection.style.display = "block";
+        aboutSection.style.display = "none";
+        homeFooter.style.display = "none";
+        ndviFooter.style.display = "none";
+        hero.style.display = "none";
+    }
+
+    function showAbout() {
+        homeSections.style.display = "none";
+        formContainer.style.display = "none";
+        diseaseSection.style.display = "none";
+        aboutSection.style.display = "block";
+        homeFooter.style.display = "none";
+        ndviFooter.style.display = "none";
+        hero.style.display = "none";
+
+        if (insightSection) insightSection.style.display = "none";
+    }
+
+    // ==========================
+    // --- Button Event Listeners
+    // ==========================
+    homeBtn.addEventListener("click", showHome);
+    ndviBtn.addEventListener("click", () => { showNDVI(); setTimeout(initMap, 100); });
+    diseaseBtn.addEventListener("click", showDisease);
+    aboutBtn.addEventListener("click", showAbout);
+    ndviLink.addEventListener("click", e => { e.preventDefault(); showNDVI(); });
+    footerDiseaseLink.addEventListener("click", e => { e.preventDefault(); showDisease(); });
+
+    // ==========================
+    // --- NDVI MAP & FORM -------
+    // ==========================
+    const form = document.getElementById("ndviForm");
+    const ndviOutput = document.getElementById("ndviOutput");
+    let map, drawnItems, drawnPolygon = null;
+
+    function initMap() {
+        if (!document.getElementById("map") || map) return;
+
+        map = L.map('map' , { attributionControl: false }).setView([20.5937, 78.9629], 5);
+
+        // Satellite imagery
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, USGS, NOAA',
+            maxZoom: 20
+        }).addTo(map);
+
+        // Labels overlay
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Labels &copy; Esri',
+            maxZoom: 20,
+            pane: 'overlayPane'
+        }).addTo(map);
+
+        drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        const drawControl = new L.Control.Draw({
+            draw: {
+                polyline: false, rectangle: false, circle: false, marker: false, circlemarker: false,
+                polygon: { allowIntersection: false, showArea: true, shapeOptions: { color: '#ff0000' } }
+            },
+            edit: { featureGroup: drawnItems }
+        });
+        map.addControl(drawControl);
+
+        map.on(L.Draw.Event.CREATED, e => {
+            if (drawnPolygon) drawnItems.clearLayers();
+            drawnPolygon = e.layer;
+            drawnItems.addLayer(drawnPolygon);
+        })
+
+        map.on(L.Draw.Event.EDITED, e => { e.layers.eachLayer(layer => { drawnPolygon = layer; }); });
+        map.on(L.Draw.Event.DELETED, () => { drawnPolygon = null; });
+    }
+
+    if (form) {
+        form.addEventListener("submit", async e => {
+            e.preventDefault();
+
+            if (!drawnPolygon) {
+                ndviOutput.style.display = "block";
+                ndviOutput.innerHTML = "<p style='color:red;'>Please draw a polygon on the map first.</p>";
+                return;
+            }
+
+            ndviOutput.style.display = "block";
+            ndviOutput.innerHTML = "<p>Loading NDVI & ETc data…</p>";
+
+            const latlngs = drawnPolygon.getLatLngs()[0].map(ll => [ll.lng, ll.lat]);
+            const formData = Object.fromEntries(new FormData(form).entries());
+            formData.coords = latlngs;
+
+            const submitBtn = form.querySelector("button");
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch("http://127.0.0.1:8000/ndvi_etc", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({ detail: response.statusText }));
+                    ndviOutput.innerHTML = `<p style="color:red;">Error: ${err.detail || response.statusText}</p>`;
+                    return;
+                }
+
+                const result = await response.json();
+                if (!result.ndvi_samples || !result.results) {
+                    ndviOutput.innerHTML = "<p>No data returned.</p>";
+                    return;
+                }
+
+                // Build NDVI Table
+                let tableHTML = `<table>
+<tr><th>Date</th><th>NDVI</th><th>Tmax (°C)</th><th>Tmin (°C)</th><th>Tavg (°C)</th><th>Kc</th><th>ETc (mm)</th></tr>`;
+                const ndviValues = [], etcValues = [], dates = [];
+                let ndviSum = 0, etcSum = 0, ndviMin = Infinity, ndviMax = -Infinity;
+
+                for (const sample of result.ndvi_samples) {
+                    const vals = result.results[sample.date];
+                    if (!vals) continue;
+
+                    tableHTML += `<tr>
+<td>${sample.date}</td>
+<td>${vals.ndvi.toFixed(3)}</td>
+<td>${vals.tmax.toFixed(1)}</td>
+<td>${vals.tmin.toFixed(1)}</td>
+<td>${vals.tavg.toFixed(1)}</td>
+<td>${vals.Kc.toFixed(2)}</td>
+<td>${vals.ETc.toFixed(2)}</td>
+</tr>`;
+
+                    ndviValues.push(vals.ndvi);
+                    etcValues.push(vals.ETc);
+                    dates.push(sample.date);
+                    ndviSum += vals.ndvi;
+                    etcSum += vals.ETc;
+                    ndviMin = Math.min(ndviMin, vals.ndvi);
+                    ndviMax = Math.max(ndviMax, vals.ndvi);
+                }
+                tableHTML += `</table>`;
+                ndviOutput.innerHTML = tableHTML;
+
+                // Summary
+                const avgNDVI = (ndviSum / ndviValues.length).toFixed(3);
+                const totalETc = etcSum.toFixed(2);
+                document.getElementById("ndviSummary").innerHTML = `
+Average NDVI: <strong>${avgNDVI}</strong> | 
+NDVI Min: <strong>${ndviMin.toFixed(3)}</strong> | 
+NDVI Max: <strong>${ndviMax.toFixed(3)}</strong> | 
+Total ETc (mm): <strong>${totalETc}</strong>`;
+                document.getElementById("insights").style.display = "block";
+
+                // Charts
+                if (window.ndviChartInstance) window.ndviChartInstance.destroy();
+                if (window.etcChartInstance) window.etcChartInstance.destroy();
+
+                const ctxNDVI = document.getElementById("ndviChart").getContext("2d");
+                window.ndviChartInstance = new Chart(ctxNDVI, {
+                    type: 'line',
+                    data: { labels: dates, datasets: [{ label: 'NDVI', data: ndviValues, borderColor: 'green', backgroundColor: 'rgba(0,128,0,0.1)', tension: 0.3, fill: true }] },
+                    options: { responsive: true, plugins: { legend: { display: true } } }
+                });
+
+                const ctxETC = document.getElementById("etcChart").getContext("2d");
+                window.etcChartInstance = new Chart(ctxETC, {
+                    type: 'line',
+                    data: { labels: dates, datasets: [{ label: 'ETc (mm)', data: etcValues, borderColor: 'blue', backgroundColor: 'rgba(0,0,255,0.1)', tension: 0.3, fill: true }] },
+                    options: { responsive: true, plugins: { legend: { display: true } } }
+                });
+
+                // Agro insights
+                const ndviDataForGemini = {
+    crop: formData.crop,
+    ndvi_samples: result.ndvi_samples.map(s => ({
+        Date: s.date,    // capitalize keys to match backend model
+        NDVI: s.ndvi,
+        Tmax: s.tmax,
+        Tmin: s.tmin,
+        Tavg: s.tavg,
+        Kc: s.Kc,
+        ETc: s.ETc
+    }))
+};
+                const insightEl = document.getElementById("ndviFullInsight");
+                insightEl.innerText = "Loading insights…";
+
+                fetch("http://127.0.0.1:8000/ndvi_insights_graph", {
+                    method: "POST",
+                    body: JSON.stringify(ndviDataForGemini),
+                    headers: { "Content-Type": "application/json" }
+                })
+                .then(res => res.json())
+                .then(data => {
+                   const rawMarkdown = data?.insights_text || "No additional insights available.";
+                   // Use marked to render Markdown as HTML
+                   insightEl.innerHTML = marked.parse(rawMarkdown);
+                })
+                .catch(err => {
+                    console.error("Error fetching NDVI insights:", err);
+                    insightEl.innerText = "Failed to fetch insights.";
+                });
+
+            } catch (error) {
+                console.error(error);
+                ndviOutput.innerHTML = `<p style="color:red;">Error fetching data: ${error.message}</p>`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+    }
+
+    // ==========================
+    // --- DISEASE DETECTION ----
+    // ==========================
+    const imgFile = document.getElementById("imgFile");
+    const imgPreview = document.getElementById("imgPreview");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const predStatus = document.getElementById("predStatus");
+    const resultBox = document.getElementById("resultBox");
+    const topK = document.getElementById("topK");
+    const insightEl = document.getElementById("disease_insightBox");
+    const insightSection = document.getElementById("diseaseInsightSection");
+
+    if (imgFile) {
+        imgFile.addEventListener("change", () => {
+            const file = imgFile.files[0];
+            if (!file || !file.type.startsWith("image/")) {
+                predStatus.textContent = file ? "Please select a valid image file." : "";
+                imgPreview.style.display = "none";
+                return;
+            }
+            predStatus.textContent = "";
+            const reader = new FileReader();
+            reader.onload = e => { imgPreview.src = e.target.result; imgPreview.style.display = "block"; };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener("click", () => {
+            imgFile.value = "";
+            imgPreview.src = "#";
+            imgPreview.style.display = "none";
+            predStatus.textContent = "";
+            resultBox.style.display = "none";
+            resultJson.textContent = "";
+            topK.innerHTML = "";
+            insightEl.textContent = "";
+            insightSection.style.display = "none";
+        });
+    }
+
+    if (uploadBtn) {
+    uploadBtn.addEventListener("click", async () => {
+        const file = imgFile.files[0];
+        resultBox.style.display = "none";
+        topK.innerHTML = "";
+        predStatus.textContent = "";
+        insightEl.textContent = "";
+        insightSection.style.display = "none";
+
+        if (!file) { 
+            predStatus.textContent = "Please choose an image file first."; 
+            return; 
+        }
+
+        const API_URL_PREDICT = "http://127.0.0.1:8000/predict_disease";
+        const API_URL_INSIGHT = "http://127.0.0.1:8000/predict_disease/insight";
+
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", file);
+
+        try {
+            predStatus.textContent = "Predicting disease…";
+            uploadBtn.disabled = true;
+            clearBtn.disabled = true;
+
+            const resp = await fetch(API_URL_PREDICT, { method: "POST", body: uploadFormData });
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+                predStatus.textContent = "Server error: " + (err.detail || resp.statusText);
+                return;
+            }
+
+            const data = await resp.json();
+            predStatus.textContent = "Prediction complete.";
+            resultBox.style.display = "block";
+
+            // Show predicted disease & probability
+            topK.innerHTML = "";
+            const li = document.createElement("li");
+            li.innerHTML = `<strong>${data.class_name}</strong> — prob: ${data.probability}`;
+            topK.appendChild(li);
+
+            // Add "Disease Info" button
+            let diseaseInfoBtn = document.getElementById("diseaseInfoBtn");
+            if (!diseaseInfoBtn) {
+                diseaseInfoBtn = document.createElement("button");
+                diseaseInfoBtn.id = "diseaseInfoBtn";
+                diseaseInfoBtn.textContent = "Disease Info";
+                diseaseInfoBtn.style.marginTop = "10px";
+                topK.appendChild(diseaseInfoBtn);
+            }
+
+            diseaseInfoBtn.disabled = false;
+            diseaseInfoBtn.onclick = async () => {
+                insightSection.style.display = "block";
+                insightEl.textContent = "Fetching insights…";
+                diseaseInfoBtn.disabled = true;
+
+                try {
+                    const insightResp = await fetch(API_URL_INSIGHT, { 
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ disease_name: data.class_name })
+                    });
+
+                    const insightData = await insightResp.json();
+                    const rawMarkdown = insightData.insight || "No additional insights available.";
+                    insightEl.innerHTML = marked.parse(rawMarkdown);
+
+                } catch (err) {
+                    insightEl.textContent = "Failed to fetch disease info: " + err.message;
+                } finally {
+                    diseaseInfoBtn.disabled = false;
+                }
+            };
+
+        } catch (err) {
+            predStatus.textContent = "Request failed: " + err.message;
+        } finally {
+            uploadBtn.disabled = false;
+            clearBtn.disabled = false;
+        }
+    });
+}
+
+
+});
+</script>
+</body>
+</html>

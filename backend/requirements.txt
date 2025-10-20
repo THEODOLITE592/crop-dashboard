@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+tensorflow
+google-cloud
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+earthengine-api
+python-dotenv
+matplotlib
+numpy
+h5py
+requests
+pydantic
