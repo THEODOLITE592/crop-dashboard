@@ -25,8 +25,8 @@ env_path = os.path.join(BASE_DIR, ".env")
 load_dotenv(dotenv_path=env_path)
 
 # Read environment variables
-api_key = os.getenv("GOOGLE_API_KEY")
-PROJECT_ID = os.getenv("PROJECT_ID")
+api_key = os.environ["GOOGLE_API_KEY"]
+PROJECT_ID = os.environ["PROJECT_ID"]
 
 if not api_key:
     raise ValueError("GOOGLE_API_KEY not found in .env")
@@ -37,13 +37,9 @@ if not PROJECT_ID:
 genai.configure(api_key=api_key)
 
 # Service account JSON inside backend/key/
-service_account_path = os.path.join(BASE_DIR, "key", "crop-472500-54a3e5f232ea.json")
-if not os.path.exists(service_account_path):
-    raise FileNotFoundError(f"Service account file not found: {service_account_path}")
-
-# ---------------- Earth Engine Initialization ----------------
-credentials = service_account.Credentials.from_service_account_file(
-    service_account_path,
+service_account_info = json.loads(os.environ["SERVICE_ACCOUNT_JSON"])
+credentials = service_account.Credentials.from_service_account_info(
+    service_account_info,
     scopes=[
         "https://www.googleapis.com/auth/earthengine",
         "https://www.googleapis.com/auth/cloud-platform"
@@ -58,7 +54,7 @@ app = FastAPI(title="NDVI & ETc API")
 frontend_path = Path(__file__).parent.parent / "frontend"
 
 # Serve frontend at root
-app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+app.mount("/app", StaticFiles(directory=frontend_path, html=True), name="frontend")
 
 
 # ---------------- Load Trained Model ----------------
