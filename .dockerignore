@@ -1,0 +1,17 @@
+# Secrets and environment
+backend/.env
+backend/key/
+
+# Python cache
+backend/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# System / OS files
+desktop.ini
+.DS_Store
+
+# Git files
+.git
+.gitignore
