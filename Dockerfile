@@ -1,29 +1,20 @@
-# 1. Base image
+# Example Dockerfile
 FROM python:3.11-slim
 
-# 2. Set workdir
+# Set working directory
 WORKDIR /app
 
-# 3. Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    git \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# 4. Copy backend requirements and install
+# Copy requirements first for caching
 COPY backend/requirements.txt .
+
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 5. Copy backend and frontend code
-COPY backend/ backend/
-COPY frontend/ frontend/
+# Copy the rest of the project
+COPY . .
 
-# 6. Set workdir to backend
-WORKDIR /app/backend
+# Expose port
+EXPOSE 10000
 
-# 7. Expose FastAPI port
-EXPOSE 8000
-
-# 8. Run FastAPI with uvicorn
-CMD ["uvicorn", "fastapi_ndvi_etc_api:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run Uvicorn
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "10000"]
