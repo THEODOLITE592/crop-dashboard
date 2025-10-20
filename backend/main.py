@@ -62,7 +62,7 @@ app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
 
 
 # ---------------- Load Trained Model ----------------
-model_path = os.path.join(BASE_DIR, "trained_model_2.h5")
+model_path = os.path.join(BASE_DIR, "trained_final_model_2.h5")
 if not os.path.exists(model_path):
     raise FileNotFoundError(f"Trained model not found: {model_path}")
 
