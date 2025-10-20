@@ -866,7 +866,7 @@ document.addEventListener("DOMContentLoaded", () => {
             submitBtn.disabled = true;
 
             try {
-                const response = await fetch("http://127.0.0.1:8000/ndvi_etc", {
+                const response = await fetch("https://crop-monitoring-dashboard.onrender.com/ndvi_etc", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(formData)
@@ -959,7 +959,7 @@ Total ETc (mm): <strong>${totalETc}</strong>`;
                 const insightEl = document.getElementById("ndviFullInsight");
                 insightEl.innerText = "Loading insights…";
 
-                fetch("http://127.0.0.1:8000/ndvi_insights_graph", {
+                fetch("https://crop-monitoring-dashboard.onrender.com/ndvi_insights_graph", {
                     method: "POST",
                     body: JSON.stringify(ndviDataForGemini),
                     headers: { "Content-Type": "application/json" }
@@ -1040,8 +1040,8 @@ Total ETc (mm): <strong>${totalETc}</strong>`;
             return; 
         }
 
-        const API_URL_PREDICT = "http://127.0.0.1:8000/predict_disease";
-        const API_URL_INSIGHT = "http://127.0.0.1:8000/predict_disease/insight";
+        const API_URL_PREDICT = "https://crop-monitoring-dashboard.onrender.com/predict_disease";
+        const API_URL_INSIGHT = "https://crop-monitoring-dashboard.onrender.com/predict_disease/insight";
 
         const uploadFormData = new FormData();
         uploadFormData.append("file", file);
