@@ -110,7 +110,7 @@ body, html { margin: 0; padding: 0; font-family: Arial, sans-serif; background: 
   .form-row { flex-wrap: wrap; }
   .form-col { flex: 1 1 100%; max-width: 100%; min-width: 0; }
 }
-#ndviForm { display:flex; flex-direction:column; gap:10px; }
+#ndviForm { display:flex; flex-direction:column; gap:10px; width :100% ; height: 384px; }
 #ndviForm input, #ndviForm select, #ndviForm button {
   padding: 8px;
   font-size: 14px;
@@ -273,6 +273,42 @@ body, html { margin: 0; padding: 0; font-family: Arial, sans-serif; background: 
     <!-- Left column: Map -->
     <div class="form-col map-container" style="flex: 1;">
       <h2>Draw Field Polygon</h2>
+      
+       <!-- Location Jump Bar (Visible only on NDVI page) -->
+<div id="location-input" style="margin-bottom: 15px; display: none; display: flex; gap: 10px; align-items: center;">
+  <input id="lat-input" type="number" step="any" placeholder="Latitude" style="
+    width: 140px;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+  " onfocus="this.style.borderColor='#4CAF50';" onblur="this.style.borderColor='#ccc';">
+  
+  <input id="lon-input" type="number" step="any" placeholder="Longitude" style="
+    width: 140px;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+  " onfocus="this.style.borderColor='#4CAF50';" onblur="this.style.borderColor='#ccc';">
+  
+  <button id="go-to-location" style="
+    padding: 8px 16px;
+    background-color: rgb(115, 167, 81);
+    color: white;
+    font-size: 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  " onmouseover="this.style.backgroundColor='#45a049';" onmouseout="this.style.backgroundColor='#4CAF50';">
+    Go
+  </button>
+</div>
+
+
       <div id="map" style="width: 100%; height: 375px; border: 1px solid #ccc;"></div>
     </div> <!-- end of left column -->
 
@@ -728,6 +764,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const homeFooter = document.getElementById("homeFooter");
     const ndviFooter = document.getElementById("ndviFooter");
     const hero = document.getElementById("hero");
+    const locationInput = document.getElementById("location-input");
 
     // ==========================
     // --- Buttons -------------
@@ -751,6 +788,8 @@ document.addEventListener("DOMContentLoaded", () => {
         ndviFooter.style.display = "none";
         hero.style.display = "flex";
 
+        if (locationInput) locationInput.style.display = "none";
+
         if (insightSection) insightSection.style.display = "none";
     }
 
@@ -763,6 +802,8 @@ document.addEventListener("DOMContentLoaded", () => {
         ndviFooter.style.display = "flex";
         hero.style.display = "none";
 
+        if (locationInput) locationInput.style.display = "block";
+
         if (insightSection) insightSection.style.display = "none";
     }
 
@@ -774,6 +815,8 @@ document.addEventListener("DOMContentLoaded", () => {
         homeFooter.style.display = "none";
         ndviFooter.style.display = "none";
         hero.style.display = "none";
+
+        if (locationInput) locationInput.style.display = "none";
     }
 
     function showAbout() {
@@ -784,6 +827,8 @@ document.addEventListener("DOMContentLoaded", () => {
         homeFooter.style.display = "none";
         ndviFooter.style.display = "none";
         hero.style.display = "none";
+
+        if (locationInput) locationInput.style.display = "none";
 
         if (insightSection) insightSection.style.display = "none";
     }
@@ -843,6 +888,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
         map.on(L.Draw.Event.EDITED, e => { e.layers.eachLayer(layer => { drawnPolygon = layer; }); });
         map.on(L.Draw.Event.DELETED, () => { drawnPolygon = null; });
+
+         // 🧭 Jump to Location Feature
+    let currentMarker = null;
+    const goBtn = document.getElementById("go-to-location");
+    const latInput = document.getElementById("lat-input");
+    const lonInput = document.getElementById("lon-input");
+
+    goBtn?.addEventListener("click", () => {
+        const lat = parseFloat(latInput.value);
+        const lon = parseFloat(lonInput.value);
+        if (isNaN(lat) || isNaN(lon)) return alert("Please enter valid latitude and longitude values.");
+
+        map.setView([lat, lon], 15);
+        if (currentMarker) map.removeLayer(currentMarker);
+        currentMarker = L.marker([lat, lon])
+            .addTo(map)
+            .bindPopup(`Location: ${lat.toFixed(4)}, ${lon.toFixed(4)}`)
+            .openPopup();
+    });
+
+    [latInput, lonInput].forEach(input => {
+        input?.addEventListener("keypress", e => {
+            if (e.key === "Enter") goBtn.click();
+        });
+    });
+
     }
 
     if (form) {
