@@ -518,7 +518,7 @@ Your analysis should help in:
 - Identifying any stress periods or abnormal NDVI fluctuations and Link ETc variations with possible irrigation or climatic effects 
 - Recommending water or crop management actions
 - Planning future field operations for the ongoing season
-- Based on data if it looks like harvesting time mention it or when harvesting time is approachable mention it 
+- Based on data if it looks like harvesting time mention it or when harvesting time is Explicitly mention it in range example in 1-2 weeks 
 **Guidelines:**
 - Focus entirely on interpreting the data patterns and practical implications.
 - Do NOT explain what NDVI, ETc, Tmax, Tmin, Tavg, or Kc mean.
