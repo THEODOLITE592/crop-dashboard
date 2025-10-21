@@ -511,16 +511,14 @@ def ndvi_insights_graph(req: NDVIInsightsRequest):
 
         # ---------------- Gemini prompt ----------------
         prompt = f"""
-You are an experienced agronomist and remote-sensing specialist analyzing NDVI and ETc data for the crop {req.crop}.
+You are an experienced agronomist and remote-sensing specialist analyzing NDVI and ETc data for the crop {req.crop}. and generating important insights from them which are usefuk in current and future 
 Use the dataset below (each row represents a field observation date) to generate insights that can support practical field decisions.
-
 Your analysis should help in:
 - Understanding overall crop growth stage and vigor
-- Identifying any stress periods or abnormal NDVI fluctuations
-- Linking ETc variations with possible irrigation or climatic effects
+- Identifying any stress periods or abnormal NDVI fluctuations and Link ETc variations with possible irrigation or climatic effects 
 - Recommending water or crop management actions
 - Planning future field operations for the ongoing season
-
+- Based on data if it looks like harvesting time mention it or when harvesting time is approachable mention it 
 **Guidelines:**
 - Focus entirely on interpreting the data patterns and practical implications.
 - Do NOT explain what NDVI, ETc, Tmax, Tmin, Tavg, or Kc mean.
@@ -529,7 +527,6 @@ Your analysis should help in:
 - Highlight any anomalies, peaks, or sudden declines that may indicate stress, over-irrigation, or recovery.
 - Provide concise, professional recommendations in short bullet points or paragraphs.
 - Do not add disclaimers about missing data unless ETc or NDVI are truly absent.
-
 Format your answer as natural language (plain text), NOT JSON.
 
 Here is the data:
